@@ -4,22 +4,21 @@ const mongoose = require('mongoose')
 const { envConstants } = require('../constants')
 const axios = require('axios')
 
-const Endpoint = mongoose.model('Endpoint')
+const Secret = mongoose.model('Secret')
 const timeHelpers = require('../helpers/time.helpers')
 const uriHelpers = require('../helpers/uri.helpers')
 
 router.post('/', async (req, res, next) => {
   try {
-    const parsed = uriHelpers.parse(req.body.target)
     const secretName = `${req.body.name}-secret`
 
-    Endpoint.countDocuments({ secretName }, (err, count) => {
+    Secret.countDocuments({ secretName }, (err, count) => {
       if (count > 0) {
         next(new Error(`Secret with name ${secretName} already exists`))
       }
     })
 
-    const dbValues = ['name', 'target', 'type', 'icon', 'category']
+    const dbValues = ['name', 'icon']
 
     const secret = Object.keys(req.body)
       .filter((key) => !dbValues.includes(key))
@@ -28,7 +27,6 @@ router.post('/', async (req, res, next) => {
     const payload = {
       secretName,
       createdAt: timeHelpers.currentTime(),
-      domain: parsed.domain,
       namespace: envConstants.NAMESPACE,
       ...Object.keys(req.body)
         .filter((key) => dbValues.includes(key))
@@ -46,9 +44,9 @@ router.post('/', async (req, res, next) => {
     )
 
     if (saved.status === 200) {
-      Endpoint.create(payload)
-        .then((endpoint) => {
-          res.status(200).json(endpoint)
+      Secret.create(payload)
+        .then((secret) => {
+          res.status(200).json(secret)
         })
         .catch((error) => {
           next(error)

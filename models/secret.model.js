@@ -3,7 +3,7 @@ const Schema = mongoose.Schema
 
 const { dbConstants } = require('../constants')
 
-const endpointSchema = new Schema({
+const secretSchema = new Schema({
   namespace: {
     type: String,
     required: true
@@ -23,7 +23,7 @@ const endpointSchema = new Schema({
 })
 
 module.exports = mongoose.model(
-  'Endpoint',
-  endpointSchema,
-  dbConstants.COLLECTION_ENDPOINT
+  'Secret',
+  secretSchema,
+  dbConstants.COLLECTION_SECRET
 )

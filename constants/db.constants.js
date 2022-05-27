@@ -1,3 +1,3 @@
 module.exports = {
-  COLLECTION_ENDPOINT: 'endpoint'
+  COLLECTION_SECRET: 'secret'
 }

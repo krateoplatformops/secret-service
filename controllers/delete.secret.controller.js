@@ -1,18 +1,18 @@
 const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
-const Endpoint = mongoose.model('Endpoint')
+const Secret = mongoose.model('Secret')
 const axios = require('axios')
 const uriHelpers = require('../helpers/uri.helpers')
 const { envConstants } = require('../constants')
 
 router.delete('/:id', async (req, res, next) => {
   try {
-    Endpoint.findByIdAndDelete(req.params.id)
+    Secret.findByIdAndDelete(req.params.id)
       .then(async (doc, err) => {
         if (err) {
           res.status(404).json({
-            message: `Endpoint with id ${req.params.id} not found now`
+            message: `Secret with id ${req.params.id} not found now`
           })
         } else {
           // Delete secret
@@ -27,7 +27,7 @@ router.delete('/:id', async (req, res, next) => {
           // response
           res
             .status(200)
-            .json({ message: `Endpoint with id ${req.params.id} deleted` })
+            .json({ message: `Secret with id ${req.params.id} deleted` })
         }
       })
       .catch((err) => {
