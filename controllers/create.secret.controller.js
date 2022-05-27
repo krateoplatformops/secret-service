@@ -18,7 +18,7 @@ router.post('/', async (req, res, next) => {
       }
     })
 
-    const dbValues = ['name', 'icon']
+    const dbValues = ['name', 'icon', 'type']
 
     const secret = Object.keys(req.body)
       .filter((key) => !dbValues.includes(key))
