@@ -26,6 +26,11 @@ router.post('/', async (req, res, next) => {
       type: req.body.type
     }
 
+    const secret = Object.keys(req.body.secret).map((key) => ({
+      key,
+      val: req.body.secret[key]
+    }))
+
     const saved = await axios.post(
       uriHelpers.concatUrl([
         envConstants.BRIDGE_URI,
@@ -33,7 +38,7 @@ router.post('/', async (req, res, next) => {
         envConstants.NAMESPACE,
         name
       ]),
-      { data: req.body.secret }
+      { data: secret }
     )
 
     if (saved.status === 200) {
