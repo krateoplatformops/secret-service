@@ -12,7 +12,7 @@ const secretSchema = new Schema({
     type: String,
     required: true
   },
-  secretName: {
+  name: {
     type: String,
     required: true
   },

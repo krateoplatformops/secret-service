@@ -35,7 +35,7 @@ router.get('/:prop/:value', async (req, res, next) => {
                   envConstants.BRIDGE_URI,
                   'secrets',
                   secret.namespace,
-                  secret.secretName
+                  secret.name
                 ])
               )
             ).data

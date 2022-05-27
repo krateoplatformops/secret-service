@@ -10,11 +10,11 @@ const uriHelpers = require('../helpers/uri.helpers')
 
 router.post('/', async (req, res, next) => {
   try {
-    const secretName = `${req.body.name}-secret`
+    const name = req.body.name
 
-    Secret.countDocuments({ secretName }, (err, count) => {
+    Secret.countDocuments({ name }, (err, count) => {
       if (count > 0) {
-        next(new Error(`Secret with name ${secretName} already exists`))
+        next(new Error(`Secret with name ${name} already exists`))
       }
     })
 
@@ -25,7 +25,7 @@ router.post('/', async (req, res, next) => {
       .map((key) => ({ key, val: req.body[key] }))
 
     const payload = {
-      secretName,
+      name,
       createdAt: timeHelpers.currentTime(),
       namespace: envConstants.NAMESPACE,
       ...Object.keys(req.body)
@@ -38,7 +38,7 @@ router.post('/', async (req, res, next) => {
         envConstants.BRIDGE_URI,
         'secrets',
         envConstants.NAMESPACE,
-        secretName
+        name
       ]),
       { data: secret }
     )

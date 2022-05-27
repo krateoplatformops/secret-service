@@ -21,7 +21,7 @@ router.delete('/:id', async (req, res, next) => {
               envConstants.BRIDGE_URI,
               'secrets',
               doc.namespace,
-              doc.secretName
+              doc.name
             ])
           )
           // response
