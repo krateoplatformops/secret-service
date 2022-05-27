@@ -8,6 +8,10 @@ const secretSchema = new Schema({
     type: String,
     required: true
   },
+  type: {
+    type: String,
+    required: true
+  },
   secretName: {
     type: String,
     required: true
