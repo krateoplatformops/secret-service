@@ -1,10 +1,9 @@
 const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
-const uriHelpers = require('../helpers/uri.helpers')
-const { envConstants } = require('../constants')
 const Secret = mongoose.model('Secret')
-const axios = require('axios')
+const k8s = require('@kubernetes/client-node')
+const stringHelpers = require('../helpers/string.helpers')
 
 router.get('/', async (req, res, next) => {
   try {
@@ -29,20 +28,23 @@ router.get('/:prop/:value', async (req, res, next) => {
         } else {
           if (secret) {
             // Get secret values
-            const secretData = (
-              await axios.get(
-                uriHelpers.concatUrl([
-                  envConstants.BRIDGE_URI,
-                  'secrets',
-                  secret.namespace,
-                  secret.name
-                ])
-              )
-            ).data
+            const kc = new k8s.KubeConfig()
+            kc.loadFromDefault()
 
-            res
-              .status(200)
-              .json({ ...secret.toObject(), data: secretData.data })
+            const k8sApi = kc.makeApiClient(k8s.CoreV1Api)
+            const data = (
+              await k8sApi.readNamespacedSecret(secret.name, secret.namespace)
+            ).body.data
+
+            const secretData = []
+            Object.keys(data).forEach((key) => {
+              secretData.push({
+                key: key,
+                val: stringHelpers.b64toAscii(data[key])
+              })
+            })
+
+            res.status(200).json({ ...secret.toObject(), data: secretData })
           } else {
             res.status(404).json({ message: 'Secret not found' })
           }

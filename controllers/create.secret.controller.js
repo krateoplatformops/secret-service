@@ -1,16 +1,16 @@
 const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
+const k8s = require('@kubernetes/client-node')
 const { envConstants } = require('../constants')
-const axios = require('axios')
 
 const Secret = mongoose.model('Secret')
 const timeHelpers = require('../helpers/time.helpers')
-const uriHelpers = require('../helpers/uri.helpers')
+const stringHelpers = require('../helpers/string.helpers')
 
 router.post('/', async (req, res, next) => {
   try {
-    const name = req.body.name
+    const name = req.body.name.replace(/\s/g, '-')
 
     Secret.countDocuments({ name }, (err, count) => {
       if (count > 0) {
@@ -21,37 +21,45 @@ router.post('/', async (req, res, next) => {
     const payload = {
       createdAt: timeHelpers.currentTime(),
       namespace: envConstants.NAMESPACE,
-      name: req.body.name,
+      name,
       icon: req.body.icon,
       type: req.body.type
     }
 
-    const secret = Object.keys(req.body.secret).map((key) => ({
-      key,
-      val: req.body.secret[key]
-    }))
+    const secretData = { ...req.body.secret }
+    Object.keys(secretData).forEach((key) => {
+      secretData[key] = stringHelpers.to64(secretData[key])
+    })
 
-    const saved = await axios.post(
-      uriHelpers.concatUrl([
-        envConstants.BRIDGE_URI,
-        'secrets',
-        envConstants.NAMESPACE,
+    var secretBody = {
+      apiVersion: 'v1',
+      kind: 'Secret',
+      metadata: {
         name
-      ]),
-      { data: secret }
-    )
-
-    if (saved.status === 200) {
-      Secret.create(payload)
-        .then((secret) => {
-          res.status(200).json(secret)
-        })
-        .catch((error) => {
-          next(error)
-        })
-    } else {
-      next(new Error('Failed to create secret'))
+      },
+      data: secretData
     }
+
+    const kc = new k8s.KubeConfig()
+    kc.loadFromDefault()
+
+    const k8sApi = kc.makeApiClient(k8s.CoreV1Api)
+
+    await k8sApi
+      .readNamespacedSecret(name, envConstants.NAMESPACE)
+      .then(async () => {
+        next(new Error('A secret with this name already exists'))
+      })
+      .catch(async () => {
+        await k8sApi.createNamespacedSecret(envConstants.NAMESPACE, secretBody)
+        Secret.create(payload)
+          .then((secret) => {
+            res.status(200).json(secret)
+          })
+          .catch((error) => {
+            next(error)
+          })
+      })
   } catch (error) {
     next(error)
   }

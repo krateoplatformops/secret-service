@@ -2,9 +2,7 @@ const express = require('express')
 const router = express.Router()
 const mongoose = require('mongoose')
 const Secret = mongoose.model('Secret')
-const axios = require('axios')
-const uriHelpers = require('../helpers/uri.helpers')
-const { envConstants } = require('../constants')
+const k8s = require('@kubernetes/client-node')
 
 router.delete('/:id', async (req, res, next) => {
   try {
@@ -16,14 +14,10 @@ router.delete('/:id', async (req, res, next) => {
           })
         } else {
           // Delete secret
-          await axios.delete(
-            uriHelpers.concatUrl([
-              envConstants.BRIDGE_URI,
-              'secrets',
-              doc.namespace,
-              doc.name
-            ])
-          )
+          const kc = new k8s.KubeConfig()
+          kc.loadFromDefault()
+          const k8sApi = kc.makeApiClient(k8s.CoreV1Api)
+          await k8sApi.deleteNamespacedSecret(doc.name, doc.namespace)
           // response
           res
             .status(200)
