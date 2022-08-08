@@ -7,7 +7,7 @@ const parse = (data, includeData = false) => {
       namespace: data.metadata.namespace,
       uid: data.metadata.uid,
       icon: data.metadata.labels.icon.replace(/_/g, ' '),
-      type: data.metadata.labels.type
+      type: data.metadata.labels.type.replace(/_/g, ' ')
     }
   }
 

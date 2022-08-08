@@ -6,6 +6,7 @@ const { envConstants, secretConstants } = require('../constants')
 const timeHelpers = require('../helpers/time.helpers')
 const stringHelpers = require('../helpers/string.helpers')
 const responseHelpers = require('../helpers/response.helpers')
+const { logger } = require('../helpers/logger.helpers')
 
 router.post('/', async (req, res, next) => {
   try {
@@ -21,13 +22,15 @@ router.post('/', async (req, res, next) => {
       metadata: {
         name,
         labels: {
-          type: req.body.type,
+          type: req.body.type.replace(/\s/g, '_'),
           icon: req.body.icon.replace(/\s/g, '_'),
           [secretConstants.selector]: secretConstants.label
         }
       },
       data: secretData
     }
+
+    logger.debug(secretBody)
 
     const kc = new k8s.KubeConfig()
     kc.loadFromDefault()
@@ -38,10 +41,11 @@ router.post('/', async (req, res, next) => {
         next(new Error('A secret with this name already exists'))
       })
       .catch(async () => {
-        const response = await k8sApi.createNamespacedSecret(
-          envConstants.NAMESPACE,
-          secretBody
-        )
+        const response = await k8sApi
+          .createNamespacedSecret(envConstants.NAMESPACE, secretBody)
+          .catch((error) => {
+            logger.error(error)
+          })
 
         res.status(200).json(responseHelpers.parse(response.body))
       })
