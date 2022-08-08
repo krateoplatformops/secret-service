@@ -1,56 +1,81 @@
 const express = require('express')
 const router = express.Router()
-const mongoose = require('mongoose')
-const Secret = mongoose.model('Secret')
 const k8s = require('@kubernetes/client-node')
-const stringHelpers = require('../helpers/string.helpers')
+const request = require('request')
+const { envConstants, secretConstants } = require('../constants')
+const { logger } = require('../helpers/logger.helpers')
+const yaml = require('js-yaml')
+const responseHelpers = require('../helpers/response.helpers')
 
 router.get('/', async (req, res, next) => {
   try {
-    Secret.find(req.query).exec((error, secrets) => {
-      if (error) {
-        next(error)
-      } else {
-        res.status(200).json(secrets)
-      }
+    const kc = new k8s.KubeConfig()
+    kc.loadFromDefault()
+
+    const opts = {}
+    kc.applyToRequest(opts)
+    const s = await new Promise((resolve, reject) => {
+      request(
+        encodeURI(
+          `${kc.getCurrentCluster().server}${secretConstants.api.formatUnicorn(
+            envConstants
+          )}?labelSelector=${secretConstants.selector}=${secretConstants.label}`
+        ),
+        opts,
+        (error, response, data) => {
+          logger.debug(JSON.stringify(response))
+          if (error) {
+            logger.error(error)
+            reject(error)
+          } else resolve(data)
+        }
+      )
+    })
+
+    const payload = yaml.load(s)
+
+    res.status(200).json({
+      list: payload.items.map((i) => {
+        return responseHelpers.parse(i)
+      })
     })
   } catch (error) {
     next(error)
   }
 })
 
-router.get('/:prop/:value', async (req, res, next) => {
+router.get('/:name', async (req, res, next) => {
   try {
-    Secret.findOne({ [req.params.prop]: req.params.value }).exec(
-      async (error, secret) => {
-        if (error) {
-          next(error)
-        } else {
-          if (secret) {
-            // Get secret values
-            const kc = new k8s.KubeConfig()
-            kc.loadFromDefault()
+    const kc = new k8s.KubeConfig()
+    kc.loadFromDefault()
 
-            const k8sApi = kc.makeApiClient(k8s.CoreV1Api)
-            const data = (
-              await k8sApi.readNamespacedSecret(secret.name, secret.namespace)
-            ).body.data
-
-            const secretData = []
-            Object.keys(data).forEach((key) => {
-              secretData.push({
-                key: key,
-                val: stringHelpers.b64toAscii(data[key])
-              })
-            })
-
-            res.status(200).json({ ...secret.toObject(), data: secretData })
-          } else {
-            res.status(404).json({ message: 'Secret not found' })
-          }
+    const opts = {}
+    kc.applyToRequest(opts)
+    const s = await new Promise((resolve, reject) => {
+      request(
+        encodeURI(
+          `${kc.getCurrentCluster().server}${secretConstants.api.formatUnicorn(
+            envConstants
+          )}/${req.params.name}`
+        ),
+        opts,
+        (error, response, data) => {
+          logger.debug(JSON.stringify(response))
+          if (error) {
+            logger.error(error)
+            reject(error)
+          } else resolve(data)
         }
-      }
-    )
+      )
+    })
+
+    const payload = yaml.load(s)
+
+    if (payload.code === 404) {
+      return res.status(404).json({ message: 'Secret not found' })
+    }
+
+    res.status(200).json(responseHelpers.parse(payload, true))
   } catch (error) {
     next(error)
   }

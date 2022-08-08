@@ -1,9 +1,9 @@
 const envConstants = require('./env.constants')
-const dbConstants = require('./db.constants')
 const pathConstants = require('./path.constants')
+const secretConstants = require('./secret.constants')
 
 module.exports = {
   envConstants,
-  dbConstants,
-  pathConstants
+  pathConstants,
+  secretConstants
 }

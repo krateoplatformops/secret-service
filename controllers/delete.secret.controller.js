@@ -1,34 +1,45 @@
 const express = require('express')
 const router = express.Router()
-const mongoose = require('mongoose')
-const Secret = mongoose.model('Secret')
 const k8s = require('@kubernetes/client-node')
+const request = require('request')
+const yaml = require('js-yaml')
+const { logger } = require('../helpers/logger.helpers')
+const { envConstants, secretConstants } = require('../constants')
 
-router.delete('/:id', async (req, res, next) => {
+router.delete('/:name', async (req, res, next) => {
   try {
-    Secret.findByIdAndDelete(req.params.id)
-      .then(async (doc, err) => {
-        if (err) {
-          res.status(404).json({
-            message: `Secret with id ${req.params.id} not found now`
-          })
-        } else {
-          // Delete secret
-          const kc = new k8s.KubeConfig()
-          kc.loadFromDefault()
-          const k8sApi = kc.makeApiClient(k8s.CoreV1Api)
-          await k8sApi.deleteNamespacedSecret(doc.name, doc.namespace)
-          // response
-          res
-            .status(200)
-            .json({ message: `Secret with id ${req.params.id} deleted` })
+    const kc = new k8s.KubeConfig()
+    kc.loadFromDefault()
+
+    const opts = {}
+    kc.applyToRequest(opts)
+    const s = await new Promise((resolve, reject) => {
+      request.delete(
+        encodeURI(
+          `${kc.getCurrentCluster().server}${secretConstants.api.formatUnicorn(
+            envConstants
+          )}/${req.params.name}`
+        ),
+        opts,
+        (error, response, data) => {
+          logger.debug(JSON.stringify(response))
+          if (error) {
+            logger.error(error)
+            reject(error)
+          } else resolve(data)
         }
-      })
-      .catch((err) => {
-        res.status(500).json({
-          message: err.message
-        })
-      })
+      )
+    })
+
+    const payload = yaml.load(s)
+
+    if (payload.code === 404) {
+      return res
+        .status(404)
+        .json({ message: `Secret ${req.params.name} not found` })
+    }
+
+    res.status(200).json({ message: `Secret ${req.params.name} deleted` })
   } catch (error) {
     next(error)
   }
