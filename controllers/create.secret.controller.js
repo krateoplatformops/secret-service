@@ -8,11 +8,16 @@ const stringHelpers = require('../helpers/string.helpers')
 const responseHelpers = require('../helpers/response.helpers')
 const { logger } = require('../helpers/logger.helpers')
 
-router.post('/', async (req, res, next) => {
+router.post('/:group', async (req, res, next) => {
   try {
-    const name = req.body.name.replace(/\s/g, '-')
+    const group = req.params.group
+    const name = `${req.body.name.replace(/\s/g, '-')}-${group}`.toLowerCase()
 
     const secretData = { ...req.body.secret }
+
+    if (req.body.target) {
+      secretData.target = req.body.target
+    }
     Object.keys(secretData).forEach((key) => {
       secretData[key] = stringHelpers.to64(secretData[key])
     })
@@ -22,12 +27,17 @@ router.post('/', async (req, res, next) => {
       metadata: {
         name,
         labels: {
+          group,
           type: req.body.type.replace(/\s/g, '_'),
           icon: req.body.icon.replace(/\s/g, '_'),
           [secretConstants.selector]: secretConstants.label
         }
       },
       data: secretData
+    }
+
+    if (req.body.category) {
+      secretBody.metadata.labels.category = req.body.category
     }
 
     logger.debug(secretBody)
@@ -47,7 +57,7 @@ router.post('/', async (req, res, next) => {
             logger.error(error)
           })
 
-        res.status(200).json(responseHelpers.parse(response.body))
+        res.status(200).json(responseHelpers.parse(response.body, group))
       })
   } catch (error) {
     next(error)

@@ -6,7 +6,7 @@ const yaml = require('js-yaml')
 const { logger } = require('../helpers/logger.helpers')
 const { envConstants, secretConstants } = require('../constants')
 
-router.delete('/:name', async (req, res, next) => {
+router.delete('/:group/:name', async (req, res, next) => {
   try {
     const kc = new k8s.KubeConfig()
     kc.loadFromDefault()
@@ -18,7 +18,7 @@ router.delete('/:name', async (req, res, next) => {
         encodeURI(
           `${kc.getCurrentCluster().server}${secretConstants.api.formatUnicorn(
             envConstants
-          )}/${req.params.name}`
+          )}/${req.params.name}-${req.params.group}`
         ),
         opts,
         (error, response, data) => {
