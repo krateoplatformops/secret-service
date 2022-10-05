@@ -22,12 +22,19 @@ const parse = (data, group, includeData = false) => {
   }
 
   if (includeData) {
-    payload.data = Object.keys(data.data).map((key) => {
-      return {
-        key,
-        val: stringHelpers.b64toAscii(data.data[key])
-      }
-    })
+    // payload.data = Object.keys(data.data).map((key) => {
+    //   return {
+    //     key,
+    //     val: stringHelpers.b64toAscii(data.data[key])
+    //   }
+    // })
+    payload.data = Object.keys(data.data).reduce(
+      (acc, key) => ({
+        ...acc,
+        [key]: stringHelpers.b64toAscii(data.data[key])
+      }),
+      {}
+    )
   }
 
   return payload
