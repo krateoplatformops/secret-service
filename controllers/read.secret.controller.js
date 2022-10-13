@@ -39,7 +39,7 @@ router.get('/:group', async (req, res, next) => {
     const payload = yaml.load(s)
 
     res.status(200).json({
-      list: payload.items.map((i) => {
+      list: (payload.items || []).map((i) => {
         return responseHelpers.parse(i, group)
       })
     })
