@@ -6,7 +6,7 @@ const { envConstants } = require('../service-library/constants')
 
 const stringHelpers = require('../service-library/helpers/string.helpers')
 const responseHelpers = require('../helpers/response.helpers')
-const logger = require('../helpers/logger.helpers')
+const logger = require('../service-library/helpers/logger.helpers')
 
 router.post('/:group', async (req, res, next) => {
   try {
