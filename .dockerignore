@@ -10,3 +10,4 @@ test.json
 empty-db.js
 test.js
 nodemon.json
+samples/*

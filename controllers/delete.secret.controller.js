@@ -3,8 +3,9 @@ const router = express.Router()
 const k8s = require('@kubernetes/client-node')
 const request = require('request')
 const yaml = require('js-yaml')
-const { logger } = require('../helpers/logger.helpers')
-const { envConstants, secretConstants } = require('../constants')
+const logger = require('../service-library/helpers/logger.helpers')
+const { secretConstants } = require('../constants')
+const { envConstants } = require('../service-library/constants')
 
 router.delete('/:group/:name', async (req, res, next) => {
   try {
