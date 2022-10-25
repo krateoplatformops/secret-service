@@ -1,4 +1,4 @@
-const stringHelpers = require('./string.helpers')
+const stringHelpers = require('../service-library/helpers/string.helpers')
 
 const parse = (data, group, includeData = false) => {
   const payload = {
